@@ -1,56 +1,22 @@
-import { useEffect, useState, useRef } from 'react';
-
-import axios from 'axios';
+import { useState, useRef } from 'react';
 
 import { ReactComponent as IconEdit } from '../assets/edit.svg';
 import { ReactComponent as IconDelete } from '../assets/delete.svg';
 import { Modal } from '../components';
-import type { Response, Person, AssetType, Asset } from '../types';
+import { useFetcher, Api, fetcher } from '../hooks/useFetcher';
+import type { Person, AssetType, Asset } from '../types';
 
 function AssetsPage() {
   const [currentAsset, setCurrentAsset] = useState<Asset | null>(null);
-  const [refetch, setRefetch] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [assets, setAssets] = useState<Asset[]>();
-  const [types, setTypes] = useState<AssetType[]>();
-  const [people, setPeople] = useState<Person[]>();
 
   const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    if (refetch) {
-      axios
-        .get<Response<Asset[]>>('http://localhost:3000/assets', { headers: {} })
-        .then((res) => res.data)
-        .then((data) => setAssets(data.result))
-        .catch((error) => console.log(error))
-        .finally(() => setRefetch(false));
-    }
-  }, [refetch]);
-
-  useEffect(() => {
-    if (refetch) {
-      axios
-        .get<Response<Person[]>>('http://localhost:3000/persons')
-        .then((res) => res.data)
-        .then((data) => setPeople(data.result))
-        .catch((error) => console.log(error))
-        .finally(() => setRefetch(false));
-    }
-  }, [refetch]);
-
-  useEffect(() => {
-    if (refetch) {
-      axios
-        .get<Response<AssetType[]>>('http://localhost:3000/asset-types', {
-          headers: {},
-        })
-        .then((res) => res.data)
-        .then((data) => setTypes(data.result))
-        .catch((error) => console.log(error))
-        .finally(() => setRefetch(false));
-    }
-  }, [refetch]);
+  const [people, refetchPeople] = useFetcher<Person[]>({ url: Api.persons });
+  const [assets, refetchAssets] = useFetcher<Asset[]>({ url: Api.assets });
+  const [types, refetchTypes] = useFetcher<AssetType[]>({
+    url: Api.assetTypes,
+  });
 
   const getPersonName = (id: string): string => {
     const person = people?.find((person) => id === person.id);
@@ -82,31 +48,45 @@ function AssetsPage() {
       personId,
     };
 
-    const url = id
-      ? `http://localhost:3000/assets/${id}`
-      : 'http://localhost:3000/assets';
+    const url = id ? `${Api.assets}/${id}` : Api.assets;
 
     console.log(data, url);
 
-    axios
+    fetcher
       .post(url, data)
       .then((response) => console.log(response))
-      .then(() => setRefetch(true))
-      .catch((error) => console.log(error));
+      .then(() => {
+        refetchAssets();
+        refetchPeople();
+        refetchTypes();
+      })
+      .catch((error) => console.log(error))
+      .finally(() => setCurrentAsset(null));
   };
 
   const deleteAsset = (id: Asset['id']) => {
-    axios
-      .delete(`http://localhost:3000/assets/${id}`)
-      .then((response) => console.log(response))
-      .then(() => setRefetch(true))
-      .catch((error) => console.log(error))
-      .finally(() => setCurrentAsset(null));
+    if (window.confirm('Are you sure?') === true) {
+      fetcher
+        .delete(`${Api.assets}/${id}`)
+        .then((response) => console.log(response))
+        .then(() => {
+          refetchAssets();
+          refetchPeople();
+          refetchTypes();
+        })
+        .catch((error) => console.log(error))
+        .finally(() => setCurrentAsset(null));
+    }
   };
 
   const editAsset = (asset: Asset) => {
     setCurrentAsset({ ...asset });
     setModalOpen(true);
+  };
+
+  const onCancel = () => {
+    setModalOpen(false);
+    setCurrentAsset(null);
   };
 
   if (!assets || !people || !types) {
@@ -183,7 +163,7 @@ function AssetsPage() {
         title="Add Asset"
         open={modalOpen}
         onOk={addAsset}
-        onCancel={() => setModalOpen(false)}
+        onCancel={onCancel}
       >
         <form
           ref={formRef}
