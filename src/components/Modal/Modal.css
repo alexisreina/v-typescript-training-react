@@ -1,0 +1,35 @@
+.modal {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  z-index: 1001;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+  font-size: 18px;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  color: #666;
+  border-bottom: 1px solid #ddd;
+}
+
+.modal-dialog {
+  margin-right: auto;
+  margin-left: auto;
+  padding: 16px;
+  background-color: #fff;
+  width: 100%;
+  max-width: 600px;
+  border-radius: 16px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  gap: 16px;
+}
